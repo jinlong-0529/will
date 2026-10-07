@@ -1,0 +1,16 @@
+# 本地配置与依赖
+.env
+.env.*
+!.env.example
+node_modules/
+
+# 数据库、日志与编辑器文件
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

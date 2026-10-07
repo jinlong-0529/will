@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="交付工程师个人工作台：任务、项目问题、知识积累与 Bug 复盘。">
+  <title>交付工作台 · 个人助手</title>
+  <style>
+    :root { --primary:#2563eb; --text:#1f2937; --background:#f8fafc; --line:color-mix(in srgb,var(--text) 11%,transparent); --muted:color-mix(in srgb,var(--text) 64%,transparent); --soft:color-mix(in srgb,var(--primary) 8%,var(--background)); }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--background); color:var(--text); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    button,input,select,textarea { font:inherit; }
+    button { cursor:pointer; }
+    button:disabled { cursor:wait; opacity:.6; }
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+    .app { min-height:100vh; }
+    /* 移动端顶部品牌与底部主导航 */
+    .site-header { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; height:64px; padding:0 18px; background:var(--background); border-bottom:1px solid var(--line); }
+    .brand { display:flex; align-items:center; gap:10px; font-size:17px; font-weight:800; white-space:nowrap; letter-spacing:-.035em; }
+    .brand-mark { width:33px; height:33px; display:grid; place-items:center; border-radius:10px; color:var(--background); background:var(--primary); font-size:17px; letter-spacing:0; }
+    .brand small { display:none; }
+    .header-date { color:var(--muted); font-size:13px; white-space:nowrap; }
+    .primary-nav { position:fixed; bottom:0; left:0; right:0; z-index:30; display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); padding:5px 3px max(5px,env(safe-area-inset-bottom)); border-top:1px solid var(--line); background:var(--background); box-shadow:0 -6px 24px color-mix(in srgb,var(--text) 5%,transparent); }
+    .nav-link { min-width:0; min-height:54px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:0; border-radius:10px; background:transparent; color:var(--muted); font-size:11px; line-height:1.15; }
+    .nav-link svg { width:20px; height:20px; stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+    .nav-link[aria-current="page"] { background:var(--soft); color:var(--primary); font-weight:700; }
+    .content { width:100%; max-width:1280px; margin:auto; padding:24px 16px 104px; }
+    .view[hidden] { display:none !important; }
+    .page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:20px; }
+    .eyebrow { display:block; color:var(--primary); font-size:12px; font-weight:800; letter-spacing:.1em; }
+    h1,h2,h3,p { margin-top:0; }
+    h1 { margin:3px 0 4px; font-size:clamp(26px,4vw,34px); line-height:1.25; letter-spacing:-.05em; }
+    .page-desc { margin:0; color:var(--muted); font-size:14px; }
+    .section-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:0 0 12px; }
+    .section-head h2 { margin:0; font-size:17px; letter-spacing:-.025em; }
+    .section-head small { color:var(--muted); font-size:12px; }
+    .button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:42px; padding:9px 14px; border:1px solid var(--primary); border-radius:10px; background:var(--primary); color:var(--background); font-size:14px; font-weight:700; text-decoration:none; white-space:nowrap; }
+    .button:hover { filter:brightness(.95); }
+    .button.subtle { border-color:var(--line); color:var(--text); background:var(--background); }
+    .button.quiet { min-height:32px; padding:4px 3px; border-color:transparent; background:transparent; color:var(--primary); }
+    .button svg { width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; }
+    .panel { min-width:0; border:1px solid var(--line); border-radius:16px; background:var(--background); box-shadow:0 8px 24px color-mix(in srgb,var(--text) 3%,transparent); }
+    .panel-pad { padding:18px; }
+    /* 工作台：优先呈现待处理工作与快捷录入 */
+    .overview-intro { padding:18px; border:1px solid color-mix(in srgb,var(--primary) 20%,transparent); border-radius:17px; background:linear-gradient(125deg,var(--soft),var(--background) 70%); }
+    .overview-intro h1 { margin:4px 0 5px; }
+    .overview-intro p { margin:0; color:var(--muted); font-size:14px; }
+    .quick-actions { display:flex; gap:8px; overflow-x:auto; padding:14px 0 2px; scrollbar-width:none; }
+    .quick-actions::-webkit-scrollbar { display:none; }
+    .metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:17px 0 25px; }
+    .metric { padding:15px; }
+    .metric strong { display:block; color:var(--primary); font-size:28px; line-height:1.1; letter-spacing:-.06em; }
+    .metric span { display:block; margin-top:7px; color:var(--muted); font-size:13px; }
+    .dashboard-grid { display:grid; gap:22px; }
+    .stack { display:grid; gap:20px; align-content:start; }
+    .record-list { margin:0; padding:0; list-style:none; }
+    .record-row { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-top:1px solid var(--line); }
+    .record-row:first-child { border-top:0; }
+    .record-icon { flex:none; display:grid; place-items:center; width:32px; height:32px; border-radius:9px; color:var(--primary); background:var(--soft); font-size:15px; font-weight:800; }
+    .record-body { min-width:0; flex:1; }
+    .record-title { margin:0; font-size:14px; font-weight:700; overflow-wrap:anywhere; }
+    .record-meta { margin:4px 0 0; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+    .pill { display:inline-block; flex:none; padding:3px 9px; border-radius:999px; color:var(--primary); background:var(--soft); font-size:12px; font-weight:700; white-space:nowrap; }
+    .empty { margin:0; padding:30px 18px; color:var(--muted); text-align:center; font-size:14px; }
+    .empty strong { display:block; margin-bottom:4px; color:var(--text); font-size:15px; }
+    .search-bar { display:flex; flex-wrap:wrap; gap:9px; margin-bottom:15px; }
+    .input,.select,.textarea { min-width:0; width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--background); color:var(--text); outline:none; }
+    .input:focus,.select:focus,.textarea:focus { border-color:var(--primary); }
+    .input::placeholder,.textarea::placeholder { color:var(--muted); }
+    .search-bar .input { flex:1 1 210px; }
+    .search-bar .select { flex:0 1 146px; }
+    .search-bar .button { margin-left:auto; }
+    .item-grid { display:grid; gap:12px; }
+    .item-card { min-width:0; padding:18px; }
+    .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .item-card h2 { margin:0 0 8px; font-size:16px; line-height:1.4; overflow-wrap:anywhere; }
+    .item-card p { margin:0 0 10px; color:var(--muted); font-size:14px; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .card-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; margin-top:12px; color:var(--muted); font-size:12px; }
+    .tag-group { display:flex; flex-wrap:wrap; gap:5px; margin-top:11px; }
+    .tag { padding:2px 8px; border:1px solid color-mix(in srgb,var(--primary) 15%,transparent); border-radius:6px; color:var(--primary); background:var(--soft); font-size:12px; }
+    .task-card { display:grid; gap:12px; }
+    .task-card h2 { margin-bottom:3px; }
+    .task-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:9px; padding-top:11px; border-top:1px solid var(--line); }
+    .task-footer .select { width:auto; min-width:112px; padding:7px 28px 7px 10px; font-size:13px; }
+    .overdue { color:var(--primary); font-weight:700; }
+    .detail-label { display:block; margin-bottom:2px; color:var(--text); font-size:12px; font-weight:800; }
+    .issue-card .card-meta,.bug-card .card-meta { border-top:1px solid var(--line); padding-top:12px; }
+    .bug-detail { margin-top:10px; }
+    .bug-detail p { margin:0; }
+    /* 通知与录入弹窗 */
+    .notice { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; margin-bottom:16px; border:1px solid color-mix(in srgb,var(--primary) 30%,transparent); border-radius:10px; background:var(--soft); color:var(--text); font-size:14px; }
+    .notice[hidden],.toast[hidden] { display:none; }
+    .toast { position:fixed; z-index:50; left:50%; bottom:88px; transform:translateX(-50%); width:max-content; max-width:calc(100vw - 32px); padding:10px 16px; border-radius:10px; color:var(--background); background:var(--text); font-size:14px; box-shadow:0 10px 28px color-mix(in srgb,var(--text) 20%,transparent); }
+    dialog { width:min(540px,calc(100% - 24px)); max-height:min(88vh,780px); padding:0; border:0; border-radius:17px; color:var(--text); background:var(--background); box-shadow:0 24px 75px color-mix(in srgb,var(--text) 25%,transparent); }
+    dialog::backdrop { background:color-mix(in srgb,var(--text) 50%,transparent); }
+    .dialog-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:17px 20px; border-bottom:1px solid var(--line); }
+    .dialog-head h2 { margin:0; font-size:19px; }
+    .icon-button { width:32px; height:32px; display:grid; place-items:center; border:0; border-radius:8px; color:var(--muted); background:var(--soft); font-size:22px; line-height:1; }
+    .entry-form { padding:18px 20px 20px; }
+    .form-fields { display:grid; gap:13px; }
+    .field { display:grid; gap:6px; font-size:14px; font-weight:700; }
+    .field .optional { color:var(--muted); font-size:12px; font-weight:400; }
+    .textarea { min-height:98px; resize:vertical; }
+    .form-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .form-actions { display:flex; justify-content:flex-end; gap:9px; padding-top:20px; }
+    .site-footer { padding:0 18px 96px; color:var(--muted); font-size:12px; text-align:center; }
+    @media (min-width:768px) {
+      .site-header { position:fixed; inset:0 auto 0 0; width:216px; height:100vh; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:0; padding:26px 14px; border-right:1px solid var(--line); border-bottom:0; }
+      .brand { padding:0 8px; }
+      .brand small { display:block; margin-top:1px; color:var(--muted); font-size:11px; font-weight:500; letter-spacing:0; }
+      .brand-name { line-height:1.2; }
+      .header-date { padding:0 10px; margin-top:20px; }
+      .primary-nav { position:static; display:flex; flex-direction:column; gap:5px; margin-top:38px; padding:0; border:0; box-shadow:none; }
+      .nav-link { min-height:43px; flex-direction:row; justify-content:flex-start; gap:11px; padding:0 13px; font-size:14px; }
+      .app-body { margin-left:216px; }
+      .content { padding:36px 30px 56px; }
+      .site-footer { padding:0 30px 25px; }
+      .toast { bottom:24px; }
+      .metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
+      .dashboard-grid { grid-template-columns:minmax(0,1.35fr) minmax(260px,.85fr); gap:20px; }
+      .item-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .item-grid.bug-grid { grid-template-columns:1fr; }
+    }
+    @media (min-width:1100px) { .site-header { width:230px; } .app-body { margin-left:230px; } .content { padding:42px 42px 62px; } .site-footer { padding:0 42px 30px; } .item-grid.bug-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 站点标识与五个工作区 -->
+    <header class="site-header">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">交</span><span class="brand-name">交付工作台<small>个人助手</small></span></div>
+      <nav class="primary-nav" aria-label="主导航">
+        <button class="nav-link" type="button" data-view="dashboard" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10 12 3l9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg>工作台</button>
+        <button class="nav-link" type="button" data-view="knowledge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5c2.7-.9 5.5-.5 8 1v14c-2.5-1.5-5.3-1.9-8-1zM20 4.5c-2.7-.9-5.5-.5-8 1v14c2.5-1.5 5.3-1.9 8-1z"/></svg>知识库</button>
+        <button class="nav-link" type="button" data-view="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 2.5 2.5L16 9"/></svg>任务</button>
+        <button class="nav-link" type="button" data-view="issues"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l3 5v12H3V8z"/><path d="M3 8h18M8 13h8M8 17h5"/></svg>项目问题</button>
+        <button class="nav-link" type="button" data-view="bugs"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h8v10a4 4 0 0 1-8 0zM9 8V6a3 3 0 0 1 6 0v2M4 11h4m8 0h4M4 17h4m8 0h4M12 8v14"/></svg>Bug 复盘</button>
+      </nav>
+      <time class="header-date" id="headerDate"></time>
+    </header>
+
+    <div class="app-body">
+      <main class="content">
+        <div class="notice" id="notice" role="alert" hidden><span id="noticeText"></span><button class="button quiet" type="button" id="retryButton">重试</button></div>
+        <!-- 今日工作概览 -->
+        <section class="view" id="dashboard" aria-label="工作台">
+          <div class="overview-intro"><span class="eyebrow">TODAY · 交付概览</span><h1>今天，先处理这些事</h1><p id="todaySummary">正在加载工作数据…</p></div>
+          <div class="quick-actions" aria-label="快捷新建">
+            <button class="button" type="button" data-add="tasks">＋ 新建任务</button>
+            <button class="button subtle" type="button" data-add="issues">记录问题</button>
+            <button class="button subtle" type="button" data-add="knowledge">沉淀知识</button>
+            <button class="button subtle" type="button" data-add="bugs">Bug 复盘</button>
+          </div>
+          <div class="metrics" id="metrics" aria-label="工作统计"></div>
+          <div class="dashboard-grid">
+            <div class="stack">
+              <section><div class="section-head"><h2>近期任务</h2><button class="button quiet" type="button" data-go="tasks">查看全部</button></div><div class="panel"><ul class="record-list" id="recentTasks"></ul></div></section>
+              <section><div class="section-head"><h2>跟进中的项目问题</h2><button class="button quiet" type="button" data-go="issues">查看全部</button></div><div class="panel"><ul class="record-list" id="recentIssues"></ul></div></section>
+            </div>
+            <section><div class="section-head"><h2>最近沉淀</h2><button class="button quiet" type="button" data-go="knowledge">打开知识库</button></div><div class="panel"><ul class="record-list" id="recentKnowledge"></ul></div></section>
+          </div>
+        </section>
+        <!-- 交付经验知识库 -->
+        <section class="view" id="knowledge" aria-labelledby="knowledgeTitle" hidden>
+          <div class="page-head"><div><span class="eyebrow">KNOWLEDGE</span><h1 id="knowledgeTitle">知识库</h1><p class="page-desc">记录经验与解决方案，随时检索复用。</p></div></div>
+          <div class="search-bar"><input class="input" id="knowledgeSearch" type="search" aria-label="搜索知识" placeholder="搜索标题、内容或标签"><button class="button" type="button" data-add="knowledge">＋ 新建知识</button></div>
+          <div class="item-grid" id="knowledgeList"></div>
+        </section>
+        <!-- 个人任务清单 -->
+        <section class="view" id="tasks" aria-labelledby="tasksTitle" hidden>
+          <div class="page-head"><div><span class="eyebrow">TASKS</span><h1 id="tasksTitle">任务</h1><p class="page-desc">按优先级和截止日期推进交付工作。</p></div></div>
+          <div class="search-bar"><input class="input" id="taskSearch" type="search" aria-label="搜索任务" placeholder="搜索任务或项目"><select class="select" id="taskFilter" aria-label="筛选任务状态"><option value="全部">全部状态</option><option>待处理</option><option>进行中</option><option>已完成</option></select><button class="button" type="button" data-add="tasks">＋ 新建任务</button></div>
+          <div class="item-grid" id="taskList"></div>
+        </section>
+        <!-- 项目问题跟踪 -->
+        <section class="view" id="issues" aria-labelledby="issuesTitle" hidden>
+          <div class="page-head"><div><span class="eyebrow">ISSUES</span><h1 id="issuesTitle">项目问题</h1><p class="page-desc">集中记录客户反馈与当前处理状态。</p></div></div>
+          <div class="search-bar"><input class="input" id="issueSearch" type="search" aria-label="搜索项目问题" placeholder="搜索问题、项目或来源"><select class="select" id="issueFilter" aria-label="筛选问题状态"><option value="全部">全部状态</option><option>待确认</option><option>跟进中</option><option>已解决</option></select><button class="button" type="button" data-add="issues">＋ 新建问题</button></div>
+          <div class="item-grid" id="issueList"></div>
+        </section>
+        <!-- Bug 定位与复盘 -->
+        <section class="view" id="bugs" aria-labelledby="bugsTitle" hidden>
+          <div class="page-head"><div><span class="eyebrow">BUG REVIEW</span><h1 id="bugsTitle">Bug 复盘</h1><p class="page-desc">保存现象、根因与预防措施，形成可复用的排查记录。</p></div></div>
+          <div class="search-bar"><input class="input" id="bugSearch" type="search" aria-label="搜索 Bug 复盘" placeholder="搜索标题、项目、现象或根因"><button class="button" type="button" data-add="bugs">＋ 新建复盘</button></div>
+          <div class="item-grid bug-grid" id="bugList"></div>
+        </section>
+      </main>
+      <footer class="site-footer">交付工作台 · 数据保存在当前服务端数据库</footer>
+    </div>
+  </div>
+  <!-- 所有记录复用的录入弹窗 -->
+  <dialog id="entryDialog" aria-labelledby="dialogTitle">
+    <div class="dialog-head"><h2 id="dialogTitle">新建记录</h2><button class="icon-button" type="button" id="closeDialog" aria-label="关闭弹窗">×</button></div>
+    <form class="entry-form" id="entryForm"><div class="form-fields" id="formFields"></div><div class="form-actions"><button class="button subtle" type="button" id="cancelDialog">取消</button><button class="button" type="submit" id="saveButton">保存记录</button></div></form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script>
+    'use strict';
+    const $ = selector => document.querySelector(selector);
+    let data = { knowledge:[], tasks:[], issues:[], bugs:[] };
+    let entryType = '';
+    let toastTimer;
+    const routes = new Set(['dashboard','knowledge','tasks','issues','bugs']);
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const localDate = () => { const d=new Date(); return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'); };
+    const displayDate = value => String(value ?? '').slice(0,10);
+    const displayUpdated = value => { const epoch=Number(value); return Number.isFinite(epoch) && epoch>0 ? new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).format(new Date(epoch*1000)) : '未知'; };
+    const list = (value) => Array.isArray(value) ? value : [];
+    const empty = (title,description='') => `<div class="panel empty"><strong>${esc(title)}</strong>${esc(description)}</div>`;
+    const tags = value => String(value ?? '').split(/[,，\s]+/).filter(Boolean).map(tag => `<span class="tag">${esc(tag)}</span>`).join('');
+    const match = (record,query,fields) => fields.some(key => String(record[key] ?? '').toLocaleLowerCase().includes(query));
+    const dueText = task => { const due=displayDate(task.due); return task.status!=='已完成' && due && due<localDate() ? `<span class="overdue">已逾期 · ${esc(due)}</span>` : `截止 ${esc(due || '未设置')}`; };
+    function toast(message) { const element=$('#toast'); element.textContent=message; element.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(() => element.hidden=true,3500); }
+    function showNotice(message) { $('#noticeText').textContent=message; $('#notice').hidden=false; }
+    function hideNotice() { $('#notice').hidden=true; }
+    function showView(id) {
+      if (!routes.has(id)) return;
+      document.querySelectorAll('.view').forEach(view => view.hidden=view.id!==id);
+      document.querySelectorAll('.nav-link').forEach(link => { if (link.dataset.view===id) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current'); });
+      window.scrollTo(0,0);
+    }
+    function renderDashboard() {
+      const activeTasks=data.tasks.filter(task=>task.status!=='已完成');
+      const activeIssues=data.issues.filter(issue=>issue.status!=='已解决');
+      const today=localDate();
+      const dueToday=activeTasks.filter(task=>displayDate(task.due)===today).length;
+      const overdue=activeTasks.filter(task=>displayDate(task.due)<today).length;
+      $('#todaySummary').textContent=`待完成 ${activeTasks.length} 项任务 · 今日到期 ${dueToday} 项 · 逾期 ${overdue} 项`;
+      $('#metrics').innerHTML=[['待完成任务',activeTasks.length],['跟进中问题',activeIssues.length],['知识条目',data.knowledge.length],['Bug 复盘',data.bugs.length]].map(([label,count])=>`<div class="panel metric"><strong>${count}</strong><span>${label}</span></div>`).join('');
+      const tasks=activeTasks.slice().sort((a,b)=>displayDate(a.due).localeCompare(displayDate(b.due))).slice(0,5);
+      $('#recentTasks').innerHTML=tasks.length?tasks.map(task=>`<li class="record-row"><span class="record-icon" aria-hidden="true">✓</span><div class="record-body"><p class="record-title">${esc(task.title)}</p><p class="record-meta">${esc(task.project)} · ${dueText(task)}</p></div><span class="pill">${esc(task.status)}</span></li>`).join(''):`<li class="empty">暂无待处理任务</li>`;
+      $('#recentIssues').innerHTML=activeIssues.slice(0,4).map(issue=>`<li class="record-row"><span class="record-icon" aria-hidden="true">!</span><div class="record-body"><p class="record-title">${esc(issue.title)}</p><p class="record-meta">${esc(issue.project)} · ${esc(issue.source)}</p></div><span class="pill">${esc(issue.status)}</span></li>`).join('') || '<li class="empty">暂无跟进中的问题</li>';
+      $('#recentKnowledge').innerHTML=data.knowledge.slice(0,4).map(item=>`<li class="record-row"><span class="record-icon" aria-hidden="true">知</span><div class="record-body"><p class="record-title">${esc(item.title)}</p><p class="record-meta">${esc(displayDate(item.date))} · ${esc(item.tags || '未加标签')}</p></div></li>`).join('') || '<li class="empty">知识库暂无记录</li>';
+    }
+    function renderKnowledge() {
+      const q=$('#knowledgeSearch').value.trim().toLocaleLowerCase();
+      const items=data.knowledge.filter(item=>match(item,q,['title','content','tags']));
+      $('#knowledgeList').innerHTML=items.length?items.map(item=>`<article class="panel item-card"><h2>${esc(item.title)}</h2><p>${esc(item.content)}</p><div class="tag-group">${tags(item.tags)}</div><div class="card-meta"><span>记录于 ${esc(displayDate(item.date))}</span></div></article>`).join(''):empty(q?'没有匹配的知识':'还没有知识条目',q?'换个关键词试试':'点击“新建知识”记录第一条经验');
+    }
+    function renderTasks() {
+      const q=$('#taskSearch').value.trim().toLocaleLowerCase(), filter=$('#taskFilter').value;
+      const items=data.tasks.filter(item=>(filter==='全部'||item.status===filter)&&match(item,q,['title','project']));
+      $('#taskList').innerHTML=items.length?items.map(task=>`<article class="panel item-card task-card"><div class="card-top"><div><h2>${esc(task.title)}</h2><div class="card-meta"><span>${esc(task.project)}</span><span>·</span><span>${dueText(task)}</span></div></div><span class="pill">${esc(task.priority)}优先级</span></div><div class="task-footer"><span class="record-meta">任务 #${esc(task.id)}</span><label><span class="field optional">更新状态</span><select class="select task-status" data-task-id="${esc(task.id)}" aria-label="更新任务 ${esc(task.title)} 的状态"><option ${task.status==='待处理'?'selected':''}>待处理</option><option ${task.status==='进行中'?'selected':''}>进行中</option><option ${task.status==='已完成'?'selected':''}>已完成</option></select></label></div></article>`).join(''):empty('没有符合条件的任务',q||filter!=='全部'?'调整搜索或状态筛选试试':'点击“新建任务”安排下一项工作');
+    }
+    function renderIssues() {
+      const q=$('#issueSearch').value.trim().toLocaleLowerCase(), filter=$('#issueFilter').value;
+      const items=data.issues.filter(item=>(filter==='全部'||item.status===filter)&&match(item,q,['title','project','source']));
+      $('#issueList').innerHTML=items.length?items.map(issue=>`<article class="panel item-card issue-card"><div class="card-top"><h2>${esc(issue.title)}</h2><span class="pill">${esc(issue.status)}</span></div><div class="card-meta"><span>项目：${esc(issue.project)}</span><span>来源：${esc(issue.source)}</span><span>更新：${esc(displayUpdated(issue.updatedAt))}</span></div><div class="task-footer"><span class="record-meta">问题 #${esc(issue.id)}</span><label><span class="field optional">更新状态</span><select class="select issue-status" data-issue-id="${esc(issue.id)}" aria-label="更新问题 ${esc(issue.title)} 的状态"><option ${issue.status==='待确认'?'selected':''}>待确认</option><option ${issue.status==='跟进中'?'selected':''}>跟进中</option><option ${issue.status==='已解决'?'selected':''}>已解决</option></select></label></div></article>`).join(''):empty('没有符合条件的问题',q||filter!=='全部'?'调整搜索或状态筛选试试':'点击“新建问题”记录客户反馈');
+    }
+    function renderBugs() {
+      const q=$('#bugSearch').value.trim().toLocaleLowerCase();
+      const items=data.bugs.filter(item=>match(item,q,['title','project','symptom','root','prevention']));
+      $('#bugList').innerHTML=items.length?items.map(bug=>`<article class="panel item-card bug-card"><div class="card-top"><h2>${esc(bug.title)}</h2><span class="pill">${esc(bug.project)}</span></div><div class="bug-detail"><span class="detail-label">现象与影响</span><p>${esc(bug.symptom)}</p></div><div class="bug-detail"><span class="detail-label">根因分析</span><p>${esc(bug.root)}</p></div><div class="bug-detail"><span class="detail-label">解决与预防</span><p>${esc(bug.prevention)}</p></div><div class="card-meta">复盘于 ${esc(displayDate(bug.date))}</div></article>`).join(''):empty(q?'没有匹配的复盘':'还没有 Bug 复盘',q?'换个关键词试试':'点击“新建复盘”记录一次排查');
+    }
+    function renderAll() { renderDashboard(); renderKnowledge(); renderTasks(); renderIssues(); renderBugs(); }
+    const field = (name,label,type='text',options=[],optional=false,placeholder='') => {
+      const id=`field-${name}`,required=optional?'':' required',hint=optional?'<span class="optional">（可选）</span>':'';
+      if(type==='textarea') return `<label class="field" for="${id}"><span>${label} ${hint}</span><textarea class="textarea" id="${id}" name="${name}" placeholder="${placeholder}"${required}></textarea></label>`;
+      if(type==='select') return `<label class="field" for="${id}"><span>${label}</span><select class="select" id="${id}" name="${name}">${options.map(option=>`<option>${option}</option>`).join('')}</select></label>`;
+      return `<label class="field" for="${id}"><span>${label} ${hint}</span><input class="input" id="${id}" name="${name}" type="${type}" placeholder="${placeholder}"${required}></label>`;
+    };
+    const forms = {
+      knowledge:{title:'新建知识',html:()=>field('title','标题','text',[],false,'例如：客户现场部署排查步骤')+field('content','经验内容','textarea',[],false,'记录场景、操作步骤和结论')+field('tags','标签','text',[],true,'例如：部署,排查')},
+      tasks:{title:'新建任务',html:()=>field('title','任务名称')+field('project','所属项目')+`<div class="form-pair">${field('priority','优先级','select',['高','中','低'])}${field('status','状态','select',['待处理','进行中','已完成'])}</div>`+field('due','截止日期','date')},
+      issues:{title:'新建项目问题',html:()=>field('title','问题描述','textarea')+field('project','所属项目')+`<div class="form-pair">${field('source','问题来源','select',['客户群聊','飞书文档','腾讯文档','现场沟通','其他'])}${field('status','状态','select',['待确认','跟进中','已解决'])}</div>`},
+      bugs:{title:'新建 Bug 复盘',html:()=>field('title','Bug 标题')+field('project','所属项目')+field('symptom','现象与影响','textarea')+field('root','根因分析','textarea')+field('prevention','解决方案与预防措施','textarea')}
+    };
+    function openEntry(type) {
+      if (!forms[type]) return;
+      entryType=type; $('#dialogTitle').textContent=forms[type].title; $('#formFields').innerHTML=forms[type].html();
+      $('#entryForm').reset(); if(type==='tasks') $('#field-due').value=localDate();
+      $('#entryDialog').showModal(); $('#formFields').querySelector('input,textarea,select')?.focus();
+    }
+    async function apiRequest(url,options) {
+      const response=await fetch(url,options);
+      let body={}; try { body=await response.json(); } catch {}
+      if(!response.ok) throw new Error(body.error||`请求失败（${response.status}）`);
+      return body;
+    }
+    async function loadData() {
+      try {
+        const response=await apiRequest('/api/data');
+        data={knowledge:list(response.knowledge),tasks:list(response.tasks),issues:list(response.issues),bugs:list(response.bugs)};
+        hideNotice(); renderAll();
+      } catch(error) { showNotice(`无法加载数据：${error.message}。请确认服务已启动。`); }
+    }
+    document.addEventListener('click',event=>{
+      const nav=event.target.closest('[data-view]'); if(nav) showView(nav.dataset.view);
+      const go=event.target.closest('[data-go]'); if(go) showView(go.dataset.go);
+      const add=event.target.closest('[data-add]'); if(add) openEntry(add.dataset.add);
+    });
+    $('#entryForm').addEventListener('submit',async event=>{
+      event.preventDefault();
+      const save=$('#saveButton'); save.disabled=true; save.textContent='保存中…';
+      const item=Object.fromEntries(new FormData(event.currentTarget));
+      if(entryType==='knowledge'||entryType==='bugs') item.date=localDate();
+      try {
+        await apiRequest(`/api/${entryType}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)});
+        $('#entryDialog').close(); await loadData(); toast('记录已保存');
+      } catch(error) { toast(`保存失败：${error.message}`); }
+      finally { save.disabled=false; save.textContent='保存记录'; }
+    });
+    $('#taskList').addEventListener('change',async event=>{
+      const control=event.target.closest('.task-status'); if(!control) return;
+      const task=data.tasks.find(item=>String(item.id)===control.dataset.taskId); if(!task) return;
+      const old=task.status; control.disabled=true;
+      try {
+        await apiRequest(`/api/tasks/${encodeURIComponent(task.id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:control.value})});
+        task.status=control.value; renderAll(); toast('任务状态已更新');
+      } catch(error) { control.value=old; toast(`更新失败：${error.message}`); }
+      finally { control.disabled=false; }
+    });
+    $('#issueList').addEventListener('change',async event=>{
+      const control=event.target.closest('.issue-status'); if(!control) return;
+      const issue=data.issues.find(item=>String(item.id)===control.dataset.issueId); if(!issue) return;
+      const old=issue.status; control.disabled=true;
+      try {
+        await apiRequest(`/api/issues/${encodeURIComponent(issue.id)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:control.value})});
+        await loadData(); toast('问题状态已更新');
+      } catch(error) { control.value=old; toast(`更新失败：${error.message}`); }
+      finally { control.disabled=false; }
+    });
+    $('#closeDialog').addEventListener('click',()=>$('#entryDialog').close());
+    $('#cancelDialog').addEventListener('click',()=>$('#entryDialog').close());
+    $('#retryButton').addEventListener('click',loadData);
+    ['knowledgeSearch','taskSearch','issueSearch','bugSearch'].forEach((id,index)=>$('#'+id).addEventListener('input',[renderKnowledge,renderTasks,renderIssues,renderBugs][index]));
+    $('#taskFilter').addEventListener('change',renderTasks);
+    $('#issueFilter').addEventListener('change',renderIssues);
+    $('#headerDate').dateTime=localDate();
+    $('#headerDate').textContent=new Intl.DateTimeFormat('zh-CN',{month:'long',day:'numeric',weekday:'long'}).format(new Date());
+    renderAll(); loadData();
+  </script>
+</body>
+</html>
